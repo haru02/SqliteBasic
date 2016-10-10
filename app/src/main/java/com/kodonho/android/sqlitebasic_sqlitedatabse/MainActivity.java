@@ -21,11 +21,6 @@ public class MainActivity extends AppCompatActivity {
     TextView result;
 
     Button openDatabase;
-    Button btnInsert;
-    Button btnSelect;
-    Button btnUpdate;
-    Button btnDelete;
-
     SQLiteDatabase db;
 
     @Override
@@ -33,65 +28,79 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         init();
+    }
 
-        openDatabase.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // 데이터베이스를 연결하는 Api
-                db = SQLiteDatabase.openDatabase(getFullpath("sqlite.db"),null,0);
-                // 0: 쓰기가능 1: read only
+    public void onInsert(View v) {
+        SQLiteDatabase db = null;
+        try {
+            db = openDatabase();
+            if (db != null) {
+                // 쿼리를 실행해준다. select 문을 제외한 모든 쿼리에 사용
+                db.execSQL("insert into bbs(no,name,title) values(1,'홍길동','글제목')");
             }
-        });
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            try {
+                if (db != null) db.close();
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+        }
+    }
 
-        btnInsert.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(db != null){
-                    // 쿼리를 실행해준다. select 문을 제외한 모든 쿼리에 사용
-                    db.execSQL("insert into bbs(no,name,title) values(1,'홍길동','글제목')");
-                    // 쿼리를 실행 후 결과값을 Cursor 리턴해 준다 즉... select문에 사용
-                    //db.rawQuery("",null);
+    // 데이터베이스를 연결하는 Api
+    public SQLiteDatabase openDatabase() {
+        return SQLiteDatabase.openDatabase(getFullpath("sqlite.db"), null, 0); // 0: 쓰기가능 1: read only
+    }
+
+    public void onSelect(View v) {
+        SQLiteDatabase db = null;
+        Cursor cursor = null;
+        try {
+            db = openDatabase();
+            if (db != null) {
+                cursor = db.rawQuery("select * from bbs order by no", null);
+                while (cursor.moveToNext()) {
+                    int idx = cursor.getColumnIndex("no"); // 컬럼명에 해당하는 순서를 가져온다
+                    String id = cursor.getString(idx); // 순서로 컬럼을 가져온다
+                    idx = cursor.getColumnIndex("name");
+                    String name = cursor.getString(idx);
+                    idx = cursor.getColumnIndex("title");
+                    String title = cursor.getString(idx);
+                    String temp = result.getText().toString();
+                    result.setText(temp + "\n id=" + id + ", name=" + name + ", title=" + title);
                 }
             }
-        });
-
-        btnSelect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(db !=null){
-                    Cursor cursor = db.rawQuery("select * from bbs",null);
-                    while(cursor.moveToNext()){
-                        int idx = cursor.getColumnIndex("no"); // 컬럼명에 해당하는 순서를 가져온다
-                        String id = cursor.getString(idx); // 순서로 컬럼을 가져온다
-                        idx = cursor.getColumnIndex("name");
-                        String name = cursor.getString(idx);
-                        idx = cursor.getColumnIndex("title");
-                        String title = cursor.getString(idx);
-
-                        result.setText("id="+id+", name="+name+", title="+title);
-                    }
-                }
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            try {
+                if (cursor != null) cursor.close();
+                if (db != null) db.close();
+            }catch(Exception e){
+                e.printStackTrace();
             }
-        });
-
+        }
     }
 
     private void init(){
-        assetToDisk("sqlite.db");
+        // 파일이 있으면 덮어쓰지 않는다
+        File file = new File(getFullpath("sqlite.db"));
+        if(!file.exists())
+            assetToDisk("sqlite.db");
 
         result = (TextView) findViewById(R.id.textView);
-        openDatabase = (Button) findViewById(R.id.btnOpen);
-        btnInsert = (Button) findViewById(R.id.btnInsert);
-        btnSelect = (Button) findViewById(R.id.btnSelect);
-        btnUpdate = (Button) findViewById(R.id.btnUpdate);
-        btnDelete = (Button) findViewById(R.id.btnDelete);
     }
 
     // 파일이름을 입력하면 내장 디렉토리에 있는 파일의 전체경로를 리턴해준다
     public String getFullpath(String fileName){
+        // internal 디렉토리중 files 디렉토리의 경로를 가져온다
         return getFilesDir().getAbsolutePath() + File.separator + fileName;
     }
 
+    // assets 에 있는 파일을 쓰기가능한 disk 디렉토리로 복사한다
+    // 안드로이드 internal Disk 는 cache, files 등 쓰기가능한 폴더가 정해져 있다
     public void assetToDisk(String fileName){
         InputStream is = null;
         BufferedInputStream bis = null;
@@ -106,11 +115,7 @@ public class MainActivity extends AppCompatActivity {
             is = manager.open(fileName);
             bis = new BufferedInputStream(is);
             // 2. 저장할 위치에 파일이 없으면 생성한다
-
-
             String targetFile = getFullpath(fileName);
-
-
             File file = new File(targetFile);
             if (!file.exists()) {
                 file.createNewFile();
