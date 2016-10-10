@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
             db = openDatabase();
             if (db != null) {
                 // 쿼리를 실행해준다. select 문을 제외한 모든 쿼리에 사용
-                db.execSQL("insert into bbs(no,name,title) values(1,'홍길동','글제목')");
+                db.execSQL("insert into bbs3(name,title) values('홍길동','글제목')");
             }
         }catch (Exception e){
             e.printStackTrace();
@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             db = openDatabase();
             if (db != null) {
-                cursor = db.rawQuery("select * from bbs order by no", null);
+                cursor = db.rawQuery("select * from bbs3 order by no", null);
                 while (cursor.moveToNext()) {
                     int idx = cursor.getColumnIndex("no"); // 컬럼명에 해당하는 순서를 가져온다
                     String id = cursor.getString(idx); // 순서로 컬럼을 가져온다
@@ -68,8 +68,10 @@ public class MainActivity extends AppCompatActivity {
                     String name = cursor.getString(idx);
                     idx = cursor.getColumnIndex("title");
                     String title = cursor.getString(idx);
+                    idx = cursor.getColumnIndex("ndate");
+                    String ndate = cursor.getString(idx);
                     String temp = result.getText().toString();
-                    result.setText(temp + "\n id=" + id + ", name=" + name + ", title=" + title);
+                    result.setText(temp + "\n id=" + id + ", name=" + name + ", title=" + title+", date="+ndate);
                 }
             }
         }catch (Exception e){
